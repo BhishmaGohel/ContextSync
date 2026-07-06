@@ -21,15 +21,15 @@ function clearOverlayContainer() {
 // Safe storage accessor: avoids uncaught exceptions when extension context is invalidated
 function getPromptStore(callback) {
   try {
-    if (window.chrome && chrome.storage && chrome.storage.sync && typeof chrome.storage.sync.get === 'function') {
+    if (window.chrome && chrome.storage && chrome.storage.local && typeof chrome.storage.local.get === 'function') {
       // wrap in try/catch in case the API throws synchronously
       try {
-        chrome.storage.sync.get({ promptMap: {} }, (store) => {
+        chrome.storage.local.get({ promptMap: {} }, (store) => {
           callback(store);
         });
         return;
       } catch (err) {
-        console.warn('chrome.storage.sync.get failed:', err);
+        console.warn('chrome.storage.local.get failed:', err);
       }
     }
   } catch (err) {
@@ -70,6 +70,45 @@ function getTextBeforeCaret(node) {
   } catch (e) {
     return range.toString();
   }
+}
+
+// Find an editable target element starting from the event target.
+// Handles direct textareas/inputs, contenteditable elements, and common host-specific selectors.
+function findEditableTarget(node) {
+  if (!node) return null;
+  // If a text node was passed, use its parent element
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+
+  const selectors = [
+    'textarea',
+    'input',
+    '[contenteditable="true"]',
+    '[contenteditable]'
+  ];
+
+  // Host-specific selectors to support Brave AI / Duck AI
+  selectors.push('#tap-input-field');
+  selectors.push('[name="user-prompt"]');
+  selectors.push('textarea[inputmode="text"]');
+
+  const sel = selectors.join(',');
+
+  // If the node itself matches, return it
+  try {
+    if (node.matches && node.matches(sel)) return node;
+  } catch (e) {
+    // ignore
+  }
+
+  // Walk up the DOM to find a matching ancestor
+  try {
+    const found = node.closest ? node.closest(sel) : null;
+    if (found) return found;
+  } catch (e) {
+    // ignore
+  }
+
+  return null;
 }
 
 function getCaretClientRect(node) {
@@ -207,13 +246,8 @@ function replaceTokenWithPrompt(element, tokenStartChar, tokenEndChar, promptTex
 
 // Listen for typed trigger tokens (case-insensitive) and show overlay after a trailing space
 document.addEventListener('input', (event) => {
-  const node = event.target;
-  const matchCriteria = node && (node.tagName === 'TEXTAREA' ||
-    node.tagName === 'INPUT' ||
-    node.hasAttribute && node.hasAttribute('contenteditable') ||
-    node.contentEditable === 'true');
-
-  if (!matchCriteria) return;
+  const node = findEditableTarget(event.target);
+  if (!node) return;
 
   const textBefore = getTextBeforeCaret(node);
   const re = /(?:^|\s)(\/(?:masterprompt|mstp))\s$/i; // trailing space required

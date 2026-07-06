@@ -7,19 +7,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // Core Storage Engine Wrapper (ACID-aligned atomic mutations on a single JSON tree key)
   const StorageEngine = {
     getAll: (callback) => {
-      chrome.storage.sync.get({ promptMap: {} }, (data) => callback(data.promptMap));
+      chrome.storage.local.get({ promptMap: {} }, (data) => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          console.error('storage.get error:', chrome.runtime.lastError);
+        }
+        callback((data && data.promptMap) || {});
+      });
     },
     save: (key, value, callback) => {
-      chrome.storage.sync.get({ promptMap: {} }, (data) => {
-        const updated = { ...data.promptMap, [key]: value };
-        chrome.storage.sync.set({ promptMap: updated }, callback);
+      chrome.storage.local.get({ promptMap: {} }, (data) => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          console.error('storage.get error (save):', chrome.runtime.lastError);
+        }
+        const existing = (data && data.promptMap) || {};
+        const updated = { ...existing, [key]: value };
+        chrome.storage.local.set({ promptMap: updated }, () => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            console.error('storage.set error:', chrome.runtime.lastError);
+          } else {
+            console.debug('Saved prompt:', key);
+          }
+          if (typeof callback === 'function') callback();
+        });
       });
     },
     delete: (key, callback) => {
-      chrome.storage.sync.get({ promptMap: {} }, (data) => {
-        const updated = { ...data.promptMap };
+      chrome.storage.local.get({ promptMap: {} }, (data) => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          console.error('storage.get error (delete):', chrome.runtime.lastError);
+        }
+        const updated = { ...((data && data.promptMap) || {}) };
         delete updated[key];
-        chrome.storage.sync.set({ promptMap: updated }, callback);
+        chrome.storage.local.set({ promptMap: updated }, () => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            console.error('storage.set error (delete):', chrome.runtime.lastError);
+          }
+          if (typeof callback === 'function') callback();
+        });
       });
     }
   };
@@ -69,18 +93,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
   saveBtn.addEventListener('click', () => {
     const nameKey = pName.value.trim();
-    const textValue = pText.value.trim();
+    // Preserve the prompt body exactly (do not trim) and normalize unicode
+    const textValue = pText.value ? pText.value.normalize('NFC') : '';
 
-    if (!nameKey || !textValue) {
-      alert('Error: Stored items cannot possess empty keys or payload definitions.');
+    if (!nameKey) {
+      alert('Error: Stored items cannot possess empty keys.');
+      return;
+    }
+    if (!textValue) {
+      alert('Error: Master prompt text cannot be empty.');
       return;
     }
 
-    StorageEngine.save(nameKey, textValue, () => {
-      pName.value = '';
-      pText.value = '';
-      renderDashboard();
+    // Normalize key as well to avoid storage mismatches with Unicode keys
+    const normalizedKey = nameKey.normalize ? nameKey.normalize('NFC') : nameKey;
+
+    console.debug('Attempting save:', { key: normalizedKey, length: textValue.length });
+    StorageEngine.save(normalizedKey, textValue, () => {
+      // check storage after save
+      chrome.storage.local.get({ promptMap: {} }, (data) => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          console.error('post-save storage.get error:', chrome.runtime.lastError);
+        }
+        console.debug('post-save promptMap keys:', Object.keys((data && data.promptMap) || {}));
+        pName.value = '';
+        pText.value = '';
+        renderDashboard();
+      });
     });
+  });
+
+  // Export prompts as JSON file
+  const exportBtn = document.getElementById('exportBtn');
+  exportBtn.addEventListener('click', () => {
+    StorageEngine.getAll((prompts) => {
+      const blob = new Blob([JSON.stringify(prompts, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'prompts.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  });
+
+  // Import prompts from JSON file (merge, overwrite existing keys after confirmation)
+  const importBtn = document.getElementById('importBtn');
+  const importFile = document.getElementById('importFile');
+  importBtn.addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || '{}'));
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          alert('Invalid file format: expected an object of key->prompt mappings.');
+          return;
+        }
+
+        const proceed = confirm('Import will merge prompts and overwrite any existing keys with the same name. Continue?');
+        if (!proceed) return;
+
+        // Normalize keys and values and merge into existing local storage
+        StorageEngine.getAll((existing) => {
+          const normalized = {};
+          Object.keys(parsed).forEach(k => {
+            const nk = k && k.normalize ? k.normalize('NFC') : k;
+            const v = parsed[k] && parsed[k].normalize ? parsed[k].normalize('NFC') : parsed[k];
+            normalized[nk] = String(v);
+          });
+          const merged = { ...(existing || {}), ...normalized };
+          chrome.storage.local.set({ promptMap: merged }, () => {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              console.error('import storage.set error:', chrome.runtime.lastError);
+              alert('Import failed: ' + chrome.runtime.lastError.message);
+              return;
+            }
+            renderDashboard();
+            alert('Import successful.');
+          });
+        });
+
+      } catch (err) {
+        console.error('Failed to parse import file:', err);
+        alert('Failed to parse JSON file.');
+      }
+    };
+    reader.readAsText(f, 'utf-8');
+    importFile.value = '';
   });
 
   renderDashboard();

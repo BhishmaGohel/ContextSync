@@ -84,7 +84,12 @@
       <textarea id="pText" placeholder="Paste structural constraints, rules, tone metrics here..."></textarea>
     </div>
     
-    <button id="saveBtn">Save to Cloud Sync</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="saveBtn">Save</button>
+      <button id="exportBtn" type="button">Export</button>
+      <button id="importBtn" type="button">Import</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none" />
+    </div>
 
     <div class="prompt-grid" id="promptGrid">
       <h2>Your Saved Prompts</h2>

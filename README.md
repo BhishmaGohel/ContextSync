@@ -1,13 +1,13 @@
  ⚡ ContextSync
 
 [![Manifest Version](https://img.shields.io/badge/Manifest-V3-blue.svg?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Storage Engine](https://img.shields.io/badge/Storage-Cloud--Synced-emerald?style=flat-square)](#)
+[![Storage Engine](https://img.shields.io/badge/Storage-Local--First-emerald?style=flat-square)](#)
 [![Architecture](https://img.shields.io/badge/Architecture-Reactive--DOM--Injection-purple?style=flat-square)](#)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
 
 > **ContextSync** is an elite, production-grade semantic orchestration utility engineered to anchor complex, high-signal structural prompt configurations into modern Large Language Model (LLM) frontends exactly when a conversation is initiated. 
 
-By utilizing reactive DOM interceptors and a decentralized, cloud-backed JSON layer, ContextSync eliminates the cognitive friction of manual prompt hydration while remaining completely immune to local browser cache deletions.
+By utilizing reactive DOM interceptors and a decentralized local JSON layer, ContextSync eliminates the cognitive friction of manual prompt hydration while giving users full authority over their stored prompt data.
 
 
 ## 🏛️ System Architecture & Mechanics
@@ -18,7 +18,7 @@ Modern LLMs rely heavily on the initial conversational turn to lock down operati
 flowchart TD
     A[User Focuses Input Window] --> B[Deterministic Session Check]
     B -- Session Active --> C[Terminate/Do Nothing]
-    B -- Fresh Session --> D[Poll chrome.storage.sync]
+    B -- Fresh Session --> D[Poll chrome.storage.local]
     D --> E[Render Non-Invasive UI]
     E -- User Selects Key --> F[DOM Value Injection & Synthetic Event Dispatching]
     F --> G[Forces SPA State Framework Hydration]
@@ -35,9 +35,9 @@ Modern web applications built on React, Next.js, and specialized custom architec
 * It dispatches high-priority bubble-capable `input` and `change` events directly down the DOM node tree, forcing the parent client-side state framework to instantly capture the injected text.
 
 ### 3. Persistent Semantic Key-Value Registry
-Unlike storage hooks anchored to local cookies or native session variables, ContextSync uses browser cloud abstraction (`chrome.storage.sync`). 
+Unlike storage hooks anchored to local cookies or native session variables, ContextSync stores prompt configuration locally inside the extension boundary using browser-local JSON persistence. Your stored prompts remain under your full control and are not automatically propagated through remote sync services.
 * **ACID-Aligned Consistency:** All mutation requests handle configuration profiles as a flattened, encapsulated JSON document object graph (`promptMap`).
-* **Purge Resilience:** Your master prompt library survives clearing local browser storage, cache files, app cookies, and data dumps, syncing effortlessly across all authenticated Google Chrome instances.
+* **End-User Data Authority:** Prompt ownership is purely with the end user—export before clearing browser cache or extension data, and import from your own JSON backup.
 
 ### 4. Non-Invasive Modal Lifecycle Management
 The contextual dropdown behaves with pristine user-experience mechanics. If a user triggers a text input but elects to click away, the modal executes an intentional asynchronous teardown sequence—closing immediately without affecting structural inputs, page layouts, or native focus.
@@ -62,9 +62,28 @@ Follow these steps to mount ContextSync directly into your developer runtime env
 ### **Orchestrate Your First Master Prompt:**
 * Click the **ContextSync** icon within the extension bar to launch the specialized fullscreen administrative dashboard.
 * Assign a unique **Key Identifier** (e.g., `Senior Academic Researcher`) and paste your raw markdown master prompt into the payload terminal.
-* Commit the configuration to cloud synchronization.
+* Commit the configuration to local extension storage.
 
 
+
+### 🧭 Best Practices for Local Prompt Management
+* Always export your prompts before clearing cache, reinstalling the extension, or resetting browser state.
+* Use the dashboard's **Export** button to create a local `prompts.json` backup.
+* Use the **Import** button to restore or migrate prompt data from a trusted JSON file.
+* Keep exported prompt backups in a secure local folder or version-controlled repository if you need repeatable deployment.
+
+### 📄 Sample `prompts.json` Template
+```json
+{
+  "Senior Academic Researcher": "You are a highly experienced academic researcher. Use formal tone, cite sources, and prioritize factual clarity.",
+  "Marketing Copywriter": "Write persuasive, benefit-focused marketing copy with a conversational tone, clear calls to action, and audience empathy."
+}
+```
+
+*Notes:*
+* Keys must be unique strings.
+* Prompt values may include line breaks or structured instructions.
+* Importing merges prompts and overwrites existing keys when names collide.
 
 ## 📁 Repository Directory Matrix
 
@@ -72,7 +91,7 @@ Follow these steps to mount ContextSync directly into your developer runtime env
 ├── manifest.json       # Structural extension schema, host rules, and capability bounds
 ├── background.js      # Decoupled service worker managing administrative view routing
 ├── dashboard.html     # Monolithic control portal layout for Master Prompt orchestration
-├── dashboard.js       # JSON CRUD mutations pipeline utilizing cloud storage layers
+├── dashboard.js       # JSON CRUD mutations pipeline utilizing local storage layers
 ├── content.js         # Reactive UI overlay compiler and DOM state validator
 └── styles.css         # UI layer formatting for sleek light/dark mode blending
 
@@ -81,7 +100,7 @@ Follow these steps to mount ContextSync directly into your developer runtime env
 ## 🔒 Enterprise-Grade Edge Case Resolutions
 
 * **The React State Desync Bug:** Fixed via double synthetic event dispatch (`input` + `change`), tricking reactive Virtual DOM models into scanning the programmatically injected prompt value immediately.
-* **The Site-Data Flush Hazard:** Solved by abandoning local storage engines in favor of cloud-synced storage vectors (`chrome.storage.sync`).
+* **The Site-Data Flush Hazard:** Solved by keeping prompt configuration in extension-local storage under the user's control rather than relying on cloud-sync storage vectors.
 * **The Textarea Loss of Focus Loop:** The insertion dropdown leverages the `mousedown` default interception clause, passing the payload configuration into target forms without taking active browser focus away from the input element.
 
 ## ⚖️ Open Source Copyleft Directive

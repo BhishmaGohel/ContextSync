@@ -1,0 +1,38 @@
+prompt-injector-overlay {
+  position: absolute;
+  z-index: 2147483647; /* Ensure overlay stays on top of any page elements */
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  min-width: 240px;
+  max-width: 360px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transform: translateY(-100%);
+}
+
+.prompt-injector-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding: 6px 14px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.prompt-injector-option {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #1e293b;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.12s ease-in-out;
+}
+
+.prompt-injector-option:hover {
+  background-color: #f1f5f9;
+  color: #2563eb;
+}

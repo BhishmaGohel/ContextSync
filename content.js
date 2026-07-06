@@ -133,13 +133,13 @@ function mountUIOverlayForToken(targetNode, tokenStartChar, tokenEndChar) {
 }
 
 function replaceTokenWithPrompt(element, tokenStartChar, tokenEndChar, promptText) {
-  // New behavior: keep the token text (e.g. /mstp) and append the prompt after it,
-  // followed by a newline. Place the caret on the new empty line.
+  // New behavior: remove the token (and its trailing space) and insert the prompt text
+  // followed by a newline. Place the caret after the inserted prompt.
   if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
     const value = element.value || '';
-    const before = value.slice(0, tokenEndChar);
+    const before = value.slice(0, tokenStartChar);
     const after = value.slice((element.selectionStart || 0));
-    const inserted = ' ' + promptText + '\n';
+    const inserted = promptText + '\n';
     const newValue = before + inserted + after;
     element.focus();
     element.value = newValue;
@@ -149,22 +149,27 @@ function replaceTokenWithPrompt(element, tokenStartChar, tokenEndChar, promptTex
     return;
   }
 
-  // contenteditable: insert after tokenEndChar without removing the token
+  // contenteditable: replace the character range covering tokenStartChar..tokenEndChar (which
+  // was computed to include the trailing space) with the plain prompt text + newline
   const root = element;
   const sel = window.getSelection();
   if (!sel) return;
 
-  // helper: create a collapsed range at a character offset within root
-  function collapsedRangeAt(rootEl, offset) {
+  // helper: create range spanning character offsets within root
+  function rangeFromCharOffsets(rootEl, start, end) {
     const range = document.createRange();
     let charIndex = 0;
+    let startSet = false;
     (function walk(node) {
       if (node.nodeType === Node.TEXT_NODE) {
         const nextCharIndex = charIndex + node.length;
-        if (offset >= charIndex && offset <= nextCharIndex) {
-          range.setStart(node, offset - charIndex);
-          range.collapse(true);
-          throw range;
+        if (!startSet && start >= charIndex && start <= nextCharIndex) {
+          range.setStart(node, start - charIndex);
+          startSet = true;
+        }
+        if (startSet && end >= charIndex && end <= nextCharIndex) {
+          range.setEnd(node, end - charIndex);
+          throw range; // stop walking early
         }
         charIndex = nextCharIndex;
       } else {
@@ -176,17 +181,19 @@ function replaceTokenWithPrompt(element, tokenStartChar, tokenEndChar, promptTex
     return range;
   }
 
-  let pointRange;
+  let range;
   try {
-    pointRange = collapsedRangeAt(root, tokenEndChar);
+    range = rangeFromCharOffsets(root, tokenStartChar, tokenEndChar);
   } catch (r) {
-    if (r instanceof Range) pointRange = r;
+    if (r instanceof Range) range = r;
   }
-  if (!pointRange) return;
-  // Insert prompt as plain text (no HTML wrappers), followed by a newline
-  const insertText = ' ' + promptText + '\n';
+  if (!range) return;
+
+  // delete contents of the token range and insert a plain text node
+  range.deleteContents();
+  const insertText = promptText + '\n';
   const textNode = document.createTextNode(insertText);
-  pointRange.insertNode(textNode);
+  range.insertNode(textNode);
 
   // place caret after the inserted text node
   sel.removeAllRanges();

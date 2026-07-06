@@ -11,7 +11,11 @@
     "https://perplexity.ai/*",
     "https://chat.mistral.ai/*",
     "https://claude.ai/*",
-    "https://chatgpt.com/*"
+    "https://chatgpt.com/*",
+    "https://search.brave.com/*",
+    "https://perplexity.ai",
+    "https://search.brave.com/*",
+    "https://duck.ai/"
   ],
   "background": {
     "service_worker": "background.js"

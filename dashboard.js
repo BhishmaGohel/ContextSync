@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       keys.forEach(key => {
-        const card = document.createElement('div');
+        const card = document.createElement('div margin-bottom: 4px;');
         card.className = 'prompt-card';
 
         const title = document.createElement('h3');

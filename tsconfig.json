@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+      "target": "ES2022",
+      "module": "ESNext",
+      "lib": ["DOM", "ES2022"],
+      "jsx": "react-jsx",
+      "moduleResolution": "bundler",
+      "types": ["vite/client", "chrome"],
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "outDir": "dist",
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "baseUrl": ".",
+      "paths": {
+        "@shared/*": ["src/shared/*"]
+      }
+    },
+  "include": ["src/**/*", "content/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

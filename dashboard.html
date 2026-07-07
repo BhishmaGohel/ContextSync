@@ -102,6 +102,22 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .prompt-grid::-webkit-scrollbar {
+      width: 6px;
+    }
+    .prompt-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .prompt-grid::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .prompt-grid::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
     .empty-state {
       padding: 20px;

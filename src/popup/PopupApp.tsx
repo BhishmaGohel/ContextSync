@@ -35,7 +35,11 @@ export default function PopupApp() {
           Dashboard
         </button>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2" style={{
+        maxHeight: '260px',
+        overflowY: 'auto',
+        paddingRight: '4px'
+      }}>
         {Object.keys(prompts).length === 0 && <div className="text-sm text-gray-500">No prompts saved.</div>}
         {Object.entries(prompts).map(([k, v]) => (
           <div key={k} className="p-2 border rounded">

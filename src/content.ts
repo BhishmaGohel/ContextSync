@@ -1,6 +1,33 @@
-import { getAllPrompts } from '@shared/storage';
-
 let activeOverlay: HTMLElement | null = null;
+
+// Safe storage accessor: avoids uncaught exceptions when extension context is invalidated
+function getPromptStore(callback: (store: any) => void) {
+  try {
+    if (window.chrome && chrome.storage && chrome.storage.local && typeof chrome.storage.local.get === 'function') {
+      try {
+        chrome.storage.local.get({ promptMap: {}, contextsync_prompts: {} }, (store: any) => {
+          // Merge both legacy and new keys
+          const merged: Record<string, string> = {};
+          if (store.promptMap) {
+            Object.assign(merged, store.promptMap);
+          }
+          if (store.contextsync_prompts) {
+            Object.assign(merged, store.contextsync_prompts);
+          }
+          callback(merged);
+        });
+        return;
+      } catch (err) {
+        console.warn('chrome.storage.local.get failed:', err);
+      }
+    }
+  } catch (err) {
+    console.warn('chrome.storage unavailable:', err);
+  }
+
+  // Fallback to empty store
+  callback({});
+}
 
 function clearOverlayContainer() {
   if (activeOverlay) {
@@ -79,7 +106,7 @@ function mountUIOverlayForToken(
 ) {
   clearOverlayContainer();
 
-  getAllPrompts().then((promptMap) => {
+  getPromptStore((promptMap: Record<string, string>) => {
     const promptKeys = Object.keys(promptMap);
     if (promptKeys.length === 0) return;
 

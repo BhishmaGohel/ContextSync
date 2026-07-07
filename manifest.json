@@ -13,8 +13,7 @@
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://search.brave.com/*",
-    "https://search.brave.com/*",
-    "https://duck.ai/"
+    "https://duck.ai/*"
   ],
   "background": {
     "service_worker": "background.js"

@@ -1,4 +1,4 @@
-prompt-injector-overlay {
+.prompt-injector-overlay {
   position: absolute;
   z-index: 2147483647; /* Ensure overlay stays on top of any page elements */
   background-color: #ffffff;

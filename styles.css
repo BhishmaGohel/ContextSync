@@ -1,4 +1,4 @@
-prompt-injector-overlay {
+.prompt-injector-overlay {
   position: absolute;
   z-index: 2147483647; /* Ensure overlay stays on top of any page elements */
   background-color: #ffffff;
@@ -8,8 +8,27 @@ prompt-injector-overlay {
   padding: 8px 0;
   min-width: 240px;
   max-width: 360px;
+  max-height: 260px;
+  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   transform: translateY(-100%);
+}
+
+.prompt-injector-overlay::-webkit-scrollbar {
+  width: 6px;
+}
+
+.prompt-injector-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prompt-injector-overlay::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.prompt-injector-overlay::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .prompt-injector-title {

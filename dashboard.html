@@ -12,7 +12,7 @@
       color: #333;
     }
     .container {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
       background: #ffffff;
       padding: 30px;
@@ -20,82 +20,182 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     }
     h1 { margin-top: 0; font-size: 24px; border-bottom: 2px solid #eaeaea; padding-bottom: 10px; }
-    .form-group { margin-bottom: 20px; }
-    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.4fr);
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .panel {
+      background: #fbfcfd;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 10px;
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #111827;
+    }
+    .panel-header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
     input[type="text"], textarea {
       width: 100%;
       box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 14px;
       font-size: 14px;
+      background: #fff;
     }
-    textarea { height: 150px; resize: vertical; font-family: inherit; }
+    textarea { height: 240px; resize: vertical; font-family: inherit; }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
     button {
-      background-color: #007bff;
-      color: white;
+      background-color: #e5e7eb;
+      color: #111827;
       border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
+      padding: 11px 18px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+      transition: background-color 0.18s ease;
     }
-    button:hover { background-color: #0056b3; }
+    button:hover { 
+      background-color: #1d4ed8;
+      color: #e5e7eb;
+    }
+    .button-secondary {
+      background-color: #e5e7eb;
+      color: #111827;
+      height: 40px;
+      border: none;
+      padding: 11px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 0.18s ease;
+    }
+    .button-secondary:hover { 
+      background-color: #2563eb;
+      color: #e5e7eb;
+     }
     .prompt-grid {
-      margin-top: 30px;
-      border-top: 1px solid #eaeaea;
-      padding-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .prompt-grid::-webkit-scrollbar {
+      width: 6px;
+    }
+    .prompt-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .prompt-grid::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .prompt-grid::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .empty-state {
+      padding: 20px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
     }
     .prompt-card {
-      background: #fdfdfd;
-      border: 1px solid #e3e3e3;
-      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       padding: 20px;
-      margin-bottom: 15px;
-      position: relative;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      margin-bottom: 4px;
     }
-    .prompt-card h3 { margin: 0 0 10px 0; font-size: 18px; color: #007bff; }
+    .prompt-card h3 { margin: 0 0 10px 0; font-size: 18px; color: #1d4ed8; }
     .prompt-card pre {
-      background: #f1f3f5;
-      padding: 12px;
-      border-radius: 6px;
+      background: #f8fafc;
+      padding: 14px;
+      border-radius: 10px;
       white-space: pre-wrap;
       word-wrap: break-word;
       font-size: 13px;
       margin: 0;
     }
-    .actions { margin-top: 15px; display: flex; justify-content: flex-end; }
-    .btn-delete { background-color: #dc3545; }
-    .btn-delete:hover { background-color: #bd2130; }
+    .prompt-card pre:hover {
+      font-weight: bold;
+    }
+    .actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+    .btn-delete { 
+      background-color: #e5e7eb;
+      color: #ef4444; 
+    }
+    .btn-delete:hover { 
+      background-color: #dc2626;
+      color: #e5e7eb; 
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Master Prompt Dashboard</h1>
-    
-    <div class="form-group">
-      <label for="pName">Master Prompt Name (Key Unique Identifier)</label>
-      <input type="text" id="pName" placeholder="e.g., Senior Academic Researcher">
-    </div>
-    
-    <div class="form-group">
-      <label for="pText">Master Prompt Text Structure</label>
-      <textarea id="pText" placeholder="Paste structural constraints, rules, tone metrics here..."></textarea>
-    </div>
-    
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button id="saveBtn">Save</button>
-      <button id="exportBtn" type="button">Export</button>
-      <button id="importBtn" type="button">Import</button>
-      <input id="importFile" type="file" accept="application/json" style="display:none" />
-    </div>
 
-    <div class="prompt-grid" id="promptGrid">
-      <h2>Your Saved Prompts</h2>
-      <div id="listContainer"></div>
+    <div class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Prompts</h2>
+          <div class="panel-header-actions">
+            <button id="exportBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Export</button>
+            <button id="importBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Import</button>
+            <input id="importFile" type="file" accept="application/json" style="display:none" />
+          </div>
+        </div>
+        <div id="listContainer"></div>
+      </div>
+
+      <div class="panel">
+        <div class="form-group">
+          <label for="pName">Master Prompt Name (Key Unique Identifier)</label>
+          <input type="text" id="pName" placeholder="e.g., Senior Academic Researcher">
+        </div>
+
+        <div class="form-group">
+          <label for="pText">Master Prompt Text Structure</label>
+          <textarea id="pText" placeholder="Paste structural constraints, rules, tone metrics here..."></textarea>
+        </div>
+
+        <div class="button-row">
+          <button id="saveBtn">Save</button>
+          <button id="updateBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Update</button>
+          <button id="cancelBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
-  <script src="dashboard.js"></script>
+  <script type="module" src="/src/dashboard/main.ts"></script>
 </body>
 </html>

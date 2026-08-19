@@ -1,4 +1,14 @@
-import { broadcastChange, getAllPrompts, savePrompts } from '@shared/storage';
+import {
+  broadcastChange,
+  getAllPrompts,
+  savePrompts,
+  getHiddenPrompts,
+  movePromptToHidden,
+  movePromptToVisible,
+  getHiddenPasswordHash,
+  setHiddenPasswordHash,
+  saveHiddenPrompts,
+} from '@shared/storage';
 
 function normalizeKey(key: string) {
   return key.normalize('NFC').trim();
@@ -104,11 +114,102 @@ function renderDashboard() {
         }
       });
 
+      // Hide button for moving prompt to hidden storage
+      const hideBtn = document.createElement('button');
+      hideBtn.textContent = 'Hide';
+      hideBtn.className = 'button-secondary';
+      hideBtn.style.marginLeft = '8px';
+      hideBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const pw = prompt('Enter password to hide this prompt (will be created if none exists):');
+        if (!pw) return;
+        const hash = await hashPassword(pw);
+        const existing = await getHiddenPasswordHash();
+        if (!existing) {
+          const ok = confirm('No hidden-password set. This password will be saved and used to protect hidden prompts. Continue?');
+          if (!ok) return;
+          await setHiddenPasswordHash(hash);
+        } else if (existing !== hash) {
+          alert('Incorrect password.');
+          return;
+        }
+        await movePromptToHidden(key);
+        renderDashboard();
+        alert('Prompt moved to hidden prompts.');
+      });
+
       row.appendChild(nameSpan);
+      row.appendChild(hideBtn);
       row.appendChild(delBtn);
       listContainer.appendChild(row);
     });
+    // clear selection if needed
   });
+}
+
+// Render hidden prompts section (only after successful auth)
+async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<string, string>) {
+  if (!hiddenMap || Object.keys(hiddenMap).length === 0) return;
+  const header = document.createElement('div');
+  header.style.marginTop = '12px';
+  header.innerHTML = '<strong>Hidden Prompts</strong>';
+  container.appendChild(header);
+
+  const keys = Object.keys(hiddenMap).sort((a, b) => a.localeCompare(b));
+  keys.forEach((key) => {
+    const row = document.createElement('div');
+    row.className = 'prompt-card';
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'center';
+    row.style.padding = '14px 16px';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = key + ' (hidden)';
+    nameSpan.style.flex = '1';
+    nameSpan.style.fontSize = '14px';
+    nameSpan.style.fontWeight = '500';
+
+    const unhideBtn = document.createElement('button');
+    unhideBtn.textContent = 'Unhide';
+    unhideBtn.className = 'button-secondary';
+    unhideBtn.style.marginLeft = '8px';
+    unhideBtn.addEventListener('click', async () => {
+      const confirmUn = confirm(`Unhide prompt "${key}" and move it back to visible prompts?`);
+      if (!confirmUn) return;
+      await movePromptToVisible(key);
+      renderDashboard();
+      alert('Prompt restored to visible prompts.');
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Delete';
+    delBtn.className = 'btn-delete';
+    delBtn.style.marginLeft = '8px';
+    delBtn.addEventListener('click', async () => {
+      const ok = confirm(`Permanently delete hidden prompt "${key}"?`);
+      if (!ok) return;
+      const hidden = await getHiddenPrompts();
+      delete hidden[key];
+      await saveHiddenPrompts(hidden);
+      renderDashboard();
+      alert('Hidden prompt deleted.');
+    });
+
+    row.appendChild(nameSpan);
+    row.appendChild(unhideBtn);
+    row.appendChild(delBtn);
+    container.appendChild(row);
+  });
+}
+
+// SHA-256 helper to hash passwords into hex string
+async function hashPassword(pw: string): Promise<string> {
+  const enc = new TextEncoder();
+  const data = enc.encode(pw);
+  const hashBuf = await crypto.subtle.digest('SHA-256', data);
+  const hashArr = Array.from(new Uint8Array(hashBuf));
+  return hashArr.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 function wireDashboard() {
@@ -119,6 +220,7 @@ function wireDashboard() {
   const cancelBtn = document.getElementById('cancelBtn')! as HTMLButtonElement;
   const exportBtn = document.getElementById('exportBtn')! as HTMLButtonElement;
   const importBtn = document.getElementById('importBtn')! as HTMLButtonElement;
+  const showHiddenBtn = document.getElementById('showHiddenBtn')! as HTMLButtonElement;
   const importFile = document.getElementById('importFile')! as HTMLInputElement;
   // Save/Create handler - behaves differently when editing an existing prompt
   saveBtn.addEventListener('click', () => {
@@ -243,6 +345,29 @@ function wireDashboard() {
     };
     reader.readAsText(file, 'utf-8');
     target.value = '';
+  });
+
+  // Show Hidden prompts flow
+  showHiddenBtn.addEventListener('click', async () => {
+    const pw = prompt('Enter password to view hidden prompts:');
+    if (!pw) return;
+    const hash = await hashPassword(pw);
+    const existing = await getHiddenPasswordHash();
+    if (!existing) {
+      alert('No hidden prompts password set.');
+      return;
+    }
+    if (existing !== hash) {
+      alert('Incorrect password.');
+      return;
+    }
+    // Re-render main list then append hidden section
+    renderDashboard();
+    const hidden = await getHiddenPrompts();
+    const listContainer = document.getElementById('listContainer')!;
+    // remove any previous hidden header if present
+    // (simple approach: re-renderDashboard cleared content, so just append)
+    renderHiddenSection(listContainer, hidden);
   });
 }
 

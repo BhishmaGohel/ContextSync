@@ -66,3 +66,60 @@ export function broadcastChange() {
     // ignore
   }
 }
+
+// Hidden prompts + password handling
+const STORAGE_KEY_HIDDEN = 'hidden_prompts';
+const STORAGE_KEY_HIDDEN_PASSWORD = 'hidden_prompts_password_hash';
+
+export async function getHiddenPrompts(): Promise<PromptMap> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_HIDDEN], (res) => {
+      resolve((res[STORAGE_KEY_HIDDEN] || {}) as PromptMap);
+    });
+  });
+}
+
+export async function saveHiddenPrompts(map: PromptMap): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEY_HIDDEN]: map }, () => resolve());
+  });
+}
+
+export async function getHiddenPasswordHash(): Promise<string | null> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_HIDDEN_PASSWORD], (res) => {
+      resolve((res[STORAGE_KEY_HIDDEN_PASSWORD] as string) || null);
+    });
+  });
+}
+
+export async function setHiddenPasswordHash(hash: string): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEY_HIDDEN_PASSWORD]: hash }, () => resolve());
+  });
+}
+
+// Move a prompt from main store to hidden store
+export async function movePromptToHidden(key: string): Promise<void> {
+  const all = await getAllPrompts();
+  const hidden = await getHiddenPrompts();
+  if (all[key] !== undefined) {
+    hidden[key] = all[key];
+    delete all[key];
+    await savePrompts(all);
+    await saveHiddenPrompts(hidden);
+    broadcastChange();
+  }
+}
+
+export async function movePromptToVisible(key: string): Promise<void> {
+  const all = await getAllPrompts();
+  const hidden = await getHiddenPrompts();
+  if (hidden[key] !== undefined) {
+    all[key] = hidden[key];
+    delete hidden[key];
+    await savePrompts(all);
+    await saveHiddenPrompts(hidden);
+    broadcastChange();
+  }
+}

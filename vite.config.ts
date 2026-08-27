@@ -16,7 +16,18 @@ function copyStaticAssets(): Plugin {
         const src = path.resolve(__dirname, file);
         const dest = path.resolve(__dirname, 'dist', file);
         if (fs.existsSync(src)) {
-          fs.copyFileSync(src, dest);
+          if (file === 'manifest.json') {
+            const manifest = JSON.parse(fs.readFileSync(src, 'utf8')) as Record<string, unknown>;
+            (manifest.background as Record<string, string>).service_worker = 'background.js';
+            (manifest.action as Record<string, string>).default_popup = 'popup.html';
+            (manifest.content_scripts as Array<Record<string, unknown>>).forEach((script) => {
+              script.js = ['content.js'];
+            });
+            manifest.options_page = 'dashboard.html';
+            fs.writeFileSync(dest, `${JSON.stringify(manifest, null, 2)}\n`);
+          } else {
+            fs.copyFileSync(src, dest);
+          }
         }
       }
     }

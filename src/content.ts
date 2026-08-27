@@ -1,5 +1,78 @@
 let activeOverlay: HTMLElement | null = null;
 
+type EncryptedData = {
+  ciphertext: string;
+  iv: string;
+  salt: string;
+};
+
+type HiddenPromptMap = Record<string, EncryptedData | string>;
+
+function getHiddenPrompts(): Promise<HiddenPromptMap> {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.local.get(['hidden_prompts'], (result) => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve((result.hidden_prompts || {}) as HiddenPromptMap);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function getHiddenPasswordHash(): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.local.get(['hidden_prompts_password_hash'], (result) => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve((result.hidden_prompts_password_hash as string) || null);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function hashPassword(password: string): Promise<string> {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function decryptData(encryptedData: EncryptedData, password: string): Promise<string> {
+  const decode = (value: string) => Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+  const passwordKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: decode(encryptedData.salt), iterations: 100000, hash: 'SHA-256' },
+    passwordKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: decode(encryptedData.iv) },
+    key,
+    decode(encryptedData.ciphertext)
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
 // Safe storage accessor: avoids uncaught exceptions when extension context is invalidated
 function getPromptStore(callback: (store: any) => void) {
   try {
@@ -102,9 +175,53 @@ function createOverlayAt(position: DOMRect) {
 function mountUIOverlayForToken(
   targetNode: HTMLElement | HTMLTextAreaElement | HTMLInputElement,
   tokenStartChar: number,
-  tokenEndChar: number
+  tokenEndChar: number,
+  hiddenPassword?: string
 ) {
   clearOverlayContainer();
+
+  if (hiddenPassword) {
+    getHiddenPrompts().then((hiddenPrompts) => {
+      const promptKeys = Object.keys(hiddenPrompts);
+      if (promptKeys.length === 0) return;
+
+      promptKeys.sort((a, b) => a.localeCompare(b));
+      const caretRect = getCaretClientRect(targetNode);
+      const menuDiv = createOverlayAt(caretRect);
+
+      const labelHeader = document.createElement('div');
+      labelHeader.className = 'prompt-injector-title';
+      labelHeader.textContent = 'Insert Hidden Master Prompt:';
+      menuDiv.appendChild(labelHeader);
+
+      promptKeys.forEach((keyName) => {
+        const selectionRow = document.createElement('div');
+        selectionRow.className = 'prompt-injector-option';
+        selectionRow.textContent = keyName;
+        selectionRow.addEventListener('mousedown', async (clickEvent) => {
+          clickEvent.preventDefault();
+          const storedPrompt = hiddenPrompts[keyName];
+          try {
+            const promptText = typeof storedPrompt === 'string'
+              ? storedPrompt
+              : await decryptData(storedPrompt as EncryptedData, hiddenPassword);
+            replaceTokenWithPrompt(targetNode, tokenStartChar, tokenEndChar, promptText);
+            clearOverlayContainer();
+          } catch {
+            alert('Unable to decrypt hidden prompt. The password may be incorrect or the data corrupted.');
+            clearOverlayContainer();
+          }
+        });
+        menuDiv.appendChild(selectionRow);
+      });
+
+      document.body.appendChild(menuDiv);
+      activeOverlay = menuDiv;
+    }).catch(() => {
+      alert('Unable to load hidden prompts.');
+    });
+    return;
+  }
 
   getPromptStore((promptMap: Record<string, string>) => {
     const promptKeys = Object.keys(promptMap);
@@ -206,14 +323,38 @@ function handleInputEvent(event: Event) {
   if (!node) return;
 
   const textBefore = getTextBeforeCaret(node);
-  const re = /(?:^|\s)(\/(?:masterprompt|mstp))\s$/i;
+  const re = /(?:^|\s)(\/(masterprompt|mstp|hmstp|hiddenmasterprompt))\s$/i;
   const m = textBefore.match(re);
   if (m) {
     const token = m[1];
     const tokenLength = token.length;
     const tokenEndChar = textBefore.length - 1;
     const tokenStartChar = tokenEndChar - tokenLength;
-    mountUIOverlayForToken(node, tokenStartChar, tokenEndChar);
+    if (m[2].toLowerCase() === 'hmstp' || m[2].toLowerCase() === 'hiddenmasterprompt') {
+      promptForHiddenPassword(node, tokenStartChar, tokenEndChar);
+    } else {
+      mountUIOverlayForToken(node, tokenStartChar, tokenEndChar);
+    }
+  }
+}
+
+async function promptForHiddenPassword(
+  targetNode: HTMLElement | HTMLTextAreaElement | HTMLInputElement,
+  tokenStartChar: number,
+  tokenEndChar: number
+) {
+  const password = prompt('Enter password to use a hidden prompt:');
+  if (!password) return;
+
+  try {
+    const expectedHash = await getHiddenPasswordHash();
+    if (!expectedHash || expectedHash !== await hashPassword(password)) {
+      alert('Incorrect password.');
+      return;
+    }
+    mountUIOverlayForToken(targetNode, tokenStartChar, tokenEndChar, password);
+  } catch {
+    alert('Unable to verify the hidden prompt password.');
   }
 }
 

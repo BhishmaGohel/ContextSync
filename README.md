@@ -31,7 +31,7 @@ ContextSync evaluates the structural state of the active browser document object
 
 Highlights
 ----------
-- Token-based insertion: type `/masterprompt ` or `/mstp ` (case-insensitive, trailing space required) and a small overlay lists saved prompts for quick insertion.
+- Token-based insertion: type `/masterprompt ` or `/mstp ` (case-insensitive, trailing space required) and a small overlay lists saved prompts for quick insertion. Type `/hmstp ` to authenticate with the hidden-prompts password, choose a hidden prompt, and insert its decrypted text.
 - Dashboard (Options page): Create, Read, Update, Delete prompts, import/export JSON, and manage hidden prompts protected by a password.
 - Popup (Action): Quick access list of prompts with a link to open the full dashboard.
 - Storage: Uses `chrome.storage.local` with backward compatibility for legacy key `promptMap` and a new key `contextsync_prompts`.
@@ -41,7 +41,7 @@ Highlights
 
 Behavior Details
 ----------------
-- Trigger detection: content script watches `input` events and matches the regex `/(?:^|\\s)(\\/(?:masterprompt|mstp))\\s$/i`. When matched it computes the token range and shows the overlay positioned near the caret.
+- Trigger detection: content script watches `input` events and matches the visible `/masterprompt ` and `/mstp ` commands or the password-protected `/hmstp ` command. When matched it computes the token range and shows the overlay positioned near the caret.
 - Insertion semantics: Selecting a prompt removes the entire token (including the trailing space), inserts the prompt text as plain text, appends a newline, and dispatches `input` and `change` events to ensure reactive frontends pick the updated value.
 - Content-editable support: The script computes character offsets and uses Range APIs to replace text within contenteditable nodes reliably.
 

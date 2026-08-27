@@ -55,7 +55,7 @@ Storage Keys & Compatibility
 ---------------------------
 - `promptMap` (legacy) — older installations may have prompts stored here.
 - `contextsync_prompts` (current main prompts key).
-- `hidden_prompts` — map of key → prompt content moved into the hidden store.
+- `hidden_prompts` — map of key → AES-GCM encrypted prompt data moved into the hidden store.
 - `hidden_prompts_password_hash` — SHA-256 hex hash for the hidden prompts password.
 
 Hidden Prompts (Password Protected)
@@ -89,7 +89,7 @@ Note: Some environment dependencies (Vitest + coverage provider) may require ini
 
 Security & Limitations
 ----------------------
-- Password storage: ContextSync stores only a SHA-256 hash of the hidden prompts password. The hidden prompt contents are stored in `chrome.storage.local` unencrypted by default. For higher security, you may opt to encrypt the hidden blobs with a key derived from the password (not currently implemented).
+- Password storage: ContextSync stores only a SHA-256 hash of the hidden prompts password. Hidden prompt contents are encrypted with AES-GCM using a PBKDF2-derived key. Exported JSON contains visible prompts, encrypted hidden prompts, and the password hash in one document.
 - Content script compatibility: The injection behavior is intentionally conservative. It uses synthetic `input` and `change` events to prompt frameworks to sync; however, sites with aggressive input sanitization or CSP may interfere with injection.
 
 Contributing

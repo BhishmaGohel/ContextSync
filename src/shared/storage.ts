@@ -1,7 +1,15 @@
-export type PromptMap = Record<string, string>;
+import { decryptData, encryptData, EncryptedData } from "../utils/crypto";
 
+export type PromptMap = Record<string, string>;
+export type HiddenPromptMap = Record<string, EncryptedData | string>;
+
+// Storage keys
 const STORAGE_KEY_NEW = 'contextsync_prompts';
 const STORAGE_KEY_LEGACY = 'promptMap';
+
+// Hidden prompts + password handling
+const STORAGE_KEY_HIDDEN = 'hidden_prompts';
+const STORAGE_KEY_HIDDEN_PASSWORD = 'hidden_prompts_password_hash';
 
 function normalizeKey(k: string) {
   return k.normalize('NFC').trim();
@@ -67,19 +75,15 @@ export function broadcastChange() {
   }
 }
 
-// Hidden prompts + password handling
-const STORAGE_KEY_HIDDEN = 'hidden_prompts';
-const STORAGE_KEY_HIDDEN_PASSWORD = 'hidden_prompts_password_hash';
-
-export async function getHiddenPrompts(): Promise<PromptMap> {
+export async function getHiddenPrompts(): Promise<HiddenPromptMap> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEY_HIDDEN], (res) => {
-      resolve((res[STORAGE_KEY_HIDDEN] || {}) as PromptMap);
+      resolve((res[STORAGE_KEY_HIDDEN] || {}) as HiddenPromptMap);
     });
   });
 }
 
-export async function saveHiddenPrompts(map: PromptMap): Promise<void> {
+export async function saveHiddenPrompts(map: HiddenPromptMap): Promise<void> {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [STORAGE_KEY_HIDDEN]: map }, () => resolve());
   });
@@ -100,11 +104,11 @@ export async function setHiddenPasswordHash(hash: string): Promise<void> {
 }
 
 // Move a prompt from main store to hidden store
-export async function movePromptToHidden(key: string): Promise<void> {
+export async function movePromptToHidden(key: string, password: string): Promise<void> {
   const all = await getAllPrompts();
   const hidden = await getHiddenPrompts();
   if (all[key] !== undefined) {
-    hidden[key] = all[key];
+    hidden[key] = await encryptData(all[key], password);
     delete all[key];
     await savePrompts(all);
     await saveHiddenPrompts(hidden);
@@ -112,11 +116,14 @@ export async function movePromptToHidden(key: string): Promise<void> {
   }
 }
 
-export async function movePromptToVisible(key: string): Promise<void> {
+export async function movePromptToVisible(key: string, password: string): Promise<void> {
   const all = await getAllPrompts();
   const hidden = await getHiddenPrompts();
   if (hidden[key] !== undefined) {
-    all[key] = hidden[key];
+    const storedPrompt = hidden[key];
+    all[key] = typeof storedPrompt === 'string'
+      ? storedPrompt
+      : await decryptData(storedPrompt, password);
     delete hidden[key];
     await savePrompts(all);
     await saveHiddenPrompts(hidden);

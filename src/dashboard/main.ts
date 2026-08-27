@@ -9,9 +9,18 @@ import {
   setHiddenPasswordHash,
   saveHiddenPrompts,
 } from '@shared/storage';
+import { EncryptedData, hashPassword } from '../utils/crypto';
 
 function normalizeKey(key: string) {
   return key.normalize('NFC').trim();
+}
+
+function isEncryptedData(value: unknown): value is EncryptedData {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const encrypted = value as EncryptedData;
+  return typeof encrypted.ciphertext === 'string'
+    && typeof encrypted.iv === 'string'
+    && typeof encrypted.salt === 'string';
 }
 
 let selectedKey: string | null = null;
@@ -133,7 +142,7 @@ function renderDashboard() {
           alert('Incorrect password.');
           return;
         }
-        await movePromptToHidden(key);
+        await movePromptToHidden(key, pw);
         renderDashboard();
         alert('Prompt moved to hidden prompts.');
       });
@@ -148,7 +157,7 @@ function renderDashboard() {
 }
 
 // Render hidden prompts section (only after successful auth)
-async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<string, string>) {
+async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<string, EncryptedData | string>, password: string) {
   if (!hiddenMap || Object.keys(hiddenMap).length === 0) return;
   const header = document.createElement('div');
   header.style.marginTop = '12px';
@@ -177,7 +186,7 @@ async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<str
     unhideBtn.addEventListener('click', async () => {
       const confirmUn = confirm(`Unhide prompt "${key}" and move it back to visible prompts?`);
       if (!confirmUn) return;
-      await movePromptToVisible(key);
+      await movePromptToVisible(key, password);
       renderDashboard();
       alert('Prompt restored to visible prompts.');
     });
@@ -201,15 +210,6 @@ async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<str
     row.appendChild(delBtn);
     container.appendChild(row);
   });
-}
-
-// SHA-256 helper to hash passwords into hex string
-async function hashPassword(pw: string): Promise<string> {
-  const enc = new TextEncoder();
-  const data = enc.encode(pw);
-  const hashBuf = await crypto.subtle.digest('SHA-256', data);
-  const hashArr = Array.from(new Uint8Array(hashBuf));
-  return hashArr.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 function wireDashboard() {
@@ -289,9 +289,13 @@ function wireDashboard() {
     });
   });
 
-  exportBtn.addEventListener('click', () => {
-    getAllPrompts().then((prompts) => {
-      const blob = new Blob([JSON.stringify(prompts, null, 2)], {
+  exportBtn.addEventListener('click', async () => {
+    const [prompts, hiddenPrompts, hiddenPasswordHash] = await Promise.all([
+      getAllPrompts(),
+      getHiddenPrompts(),
+      getHiddenPasswordHash(),
+    ]);
+    const blob = new Blob([JSON.stringify({ prompts, hiddenPrompts, hiddenPasswordHash }, null, 2)], {
         type: 'application/json;charset=utf-8'
       });
       const url = URL.createObjectURL(blob);
@@ -302,7 +306,6 @@ function wireDashboard() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    });
   });
 
   importBtn.addEventListener('click', () => importFile.click());
@@ -317,22 +320,43 @@ function wireDashboard() {
       try {
         const parsed = JSON.parse(String(reader.result || '{}'));
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          alert('Invalid file format: expected an object of key->prompt mappings.');
+          alert('Invalid file format: expected a prompt mapping or a combined backup.');
+          return;
+        }
+
+        const isCombinedBackup = Object.prototype.hasOwnProperty.call(parsed, 'prompts')
+          || Object.prototype.hasOwnProperty.call(parsed, 'hiddenPrompts')
+          || Object.prototype.hasOwnProperty.call(parsed, 'hiddenPasswordHash');
+        const importedPrompts = isCombinedBackup ? parsed.prompts : parsed;
+        const importedHidden = isCombinedBackup ? parsed.hiddenPrompts : {};
+        const importedPasswordHash = isCombinedBackup ? parsed.hiddenPasswordHash : undefined;
+
+        if (!importedPrompts || typeof importedPrompts !== 'object' || Array.isArray(importedPrompts)
+          || !Object.values(importedPrompts).every((value) => typeof value === 'string')
+          || (isCombinedBackup && (!importedHidden || typeof importedHidden !== 'object'
+            || Array.isArray(importedHidden) || !Object.values(importedHidden).every(isEncryptedData)
+            || (importedPasswordHash !== null && typeof importedPasswordHash !== 'string')))) {
+          alert('Invalid file format: expected a prompt mapping or a valid combined backup.');
           return;
         }
 
         const proceed = confirm('Import will merge prompts and overwrite any existing keys with the same name. Continue?');
         if (!proceed) return;
 
-        getAllPrompts().then((existing) => {
+        Promise.all([getAllPrompts(), isCombinedBackup ? getHiddenPrompts() : Promise.resolve({})]).then(([existing, existingHidden]) => {
           const normalized: Record<string, string> = {};
-          Object.keys(parsed).forEach((key) => {
+          Object.keys(importedPrompts).forEach((key) => {
             const normalizedKey = normalizeKey(String(key));
-            const value = parsed[key];
+            const value = importedPrompts[key];
             normalized[normalizedKey] = String(value).normalize('NFC');
           });
           const merged = { ...existing, ...normalized };
-          savePrompts(merged).then(() => {
+          const writes: Promise<void>[] = [savePrompts(merged)];
+          if (isCombinedBackup) {
+            writes.push(saveHiddenPrompts({ ...existingHidden, ...importedHidden }));
+            if (importedPasswordHash) writes.push(setHiddenPasswordHash(importedPasswordHash));
+          }
+          Promise.all(writes).then(() => {
             broadcastChange();
             renderDashboard();
             alert('Import successful.');
@@ -367,7 +391,7 @@ function wireDashboard() {
     const listContainer = document.getElementById('listContainer')!;
     // remove any previous hidden header if present
     // (simple approach: re-renderDashboard cleared content, so just append)
-    renderHiddenSection(listContainer, hidden);
+    renderHiddenSection(listContainer, hidden, pw);
   });
 }
 

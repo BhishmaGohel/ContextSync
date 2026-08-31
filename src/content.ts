@@ -194,6 +194,26 @@ function mountUIOverlayForToken(
       labelHeader.textContent = 'Insert Hidden Master Prompt:';
       menuDiv.appendChild(labelHeader);
 
+      // Create the search input
+      const searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      searchInput.style.background = 'white';
+      searchInput.style.fontFamily = 'sans-serif';
+      searchInput.style.color = '#1f2937';
+      searchInput.style.width = '80%';
+      searchInput.style.height = '24px';
+      searchInput.style.borderRadius = '10px';
+      searchInput.style.marginLeft = '12px';
+      searchInput.style.paddingLeft = '10px';
+      searchInput.className = 'prompt-injector-search'; // Add a CSS class if you want to style it
+      searchInput.placeholder = 'Search prompts...';
+      // Prevent mousedown from blurring or triggering unwanted behavior on the menu
+      searchInput.addEventListener('mousedown', (e) => e.stopPropagation());
+      menuDiv.appendChild(searchInput);
+
+      // Keep track of row elements to filter them later
+      const rowElements: { element: HTMLDivElement; keyName: string }[] = [];
+
       promptKeys.forEach((keyName) => {
         const selectionRow = document.createElement('div');
         selectionRow.className = 'prompt-injector-option';
@@ -213,10 +233,26 @@ function mountUIOverlayForToken(
           }
         });
         menuDiv.appendChild(selectionRow);
+        rowElements.push({ element: selectionRow, keyName });
+      });
+
+      // Add filter logic
+      searchInput.addEventListener('input', (e) => {
+        const query = (e.target as HTMLInputElement).value.toLowerCase();
+        rowElements.forEach(({ element, keyName }) => {
+          if (keyName.toLowerCase().includes(query)) {
+            element.style.display = ''; // Show row
+          } else {
+            element.style.display = 'none'; // Hide row
+          }
+        });
       });
 
       document.body.appendChild(menuDiv);
       activeOverlay = menuDiv;
+
+      // Optional: Automatically focus the search bar when the menu opens
+      setTimeout(() => searchInput.focus(), 0);
     }).catch(() => {
       alert('Unable to load hidden prompts.');
     });
@@ -236,6 +272,26 @@ function mountUIOverlayForToken(
     labelHeader.textContent = 'Insert Saved Master Prompt:';
     menuDiv.appendChild(labelHeader);
 
+    // Create the search input
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.style.background = 'white';
+    searchInput.style.fontFamily = 'sans-serif';
+    searchInput.style.color = '#1f2937';
+    searchInput.style.width = '80%';
+    searchInput.style.height = '24px';
+    searchInput.style.borderRadius = '10px';
+    searchInput.style.marginLeft = '12px';
+    searchInput.style.paddingLeft = '10px';
+    searchInput.className = 'prompt-injector-search'; // Add a CSS class if you want to style it
+    searchInput.placeholder = 'Search prompts...';
+    // Prevent mousedown from blurring or triggering unwanted behavior on the menu
+    searchInput.addEventListener('mousedown', (e) => e.stopPropagation());
+    menuDiv.appendChild(searchInput);
+
+    // Keep track of row elements to filter them later
+    const rowElements: { element: HTMLDivElement; keyName: string }[] = [];
+
     promptKeys.forEach((keyName) => {
       const selectionRow = document.createElement('div');
       selectionRow.className = 'prompt-injector-option';
@@ -247,10 +303,26 @@ function mountUIOverlayForToken(
         clearOverlayContainer();
       });
       menuDiv.appendChild(selectionRow);
+      rowElements.push({ element: selectionRow, keyName });
+    });
+
+    // Add filter logic
+    searchInput.addEventListener('input', (e) => {
+      const query = (e.target as HTMLInputElement).value.toLowerCase();
+      rowElements.forEach(({ element, keyName }) => {
+        if (keyName.toLowerCase().includes(query)) {
+          element.style.display = ''; // Show row
+        } else {
+          element.style.display = 'none'; // Hide row
+        }
+      });
     });
 
     document.body.appendChild(menuDiv);
     activeOverlay = menuDiv;
+
+    // Optional: Automatically focus the search bar when the menu opens
+    setTimeout(() => searchInput.focus(), 0);
   });
 }
 

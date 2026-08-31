@@ -13,13 +13,15 @@
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://search.brave.com/*",
-    "https://search.brave.com/*",
-    "https://duck.ai/"
+    "https://duck.ai/*",
+    "https://x.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "dist/background.js"
   },
-  "action": {},
+  "action": {
+    "default_popup": "dist/popup.html"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -27,10 +29,22 @@
         "https://perplexity.ai/*",
         "https://chat.mistral.ai/*",
         "https://claude.ai/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://search.brave.com/*",
+        "https://duck.ai/*",
+        "https://x.com/*" 
       ],
-      "js": ["content.js"],
-      "css": ["styles.css"]
+      "js": ["dist/content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+  ,
+  "options_page": "dist/dashboard.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["dist/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

@@ -1,0 +1,132 @@
+import { decryptData, encryptData, EncryptedData } from "../utils/crypto";
+
+export type PromptMap = Record<string, string>;
+export type HiddenPromptMap = Record<string, EncryptedData | string>;
+
+// Storage keys
+const STORAGE_KEY_NEW = 'contextsync_prompts';
+const STORAGE_KEY_LEGACY = 'promptMap';
+
+// Hidden prompts + password handling
+const STORAGE_KEY_HIDDEN = 'hidden_prompts';
+const STORAGE_KEY_HIDDEN_PASSWORD = 'hidden_prompts_password_hash';
+
+function normalizeKey(k: string) {
+  return k.normalize('NFC').trim();
+}
+
+function mergePromptMaps(newMap: PromptMap, legacyMap: PromptMap): PromptMap {
+  return { ...legacyMap, ...newMap };
+}
+
+export async function getAllPrompts(): Promise<PromptMap> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_NEW, STORAGE_KEY_LEGACY], (res) => {
+      const rawNew = (res[STORAGE_KEY_NEW] || {}) as PromptMap;
+      const rawLegacy = (res[STORAGE_KEY_LEGACY] || {}) as PromptMap;
+      resolve(mergePromptMaps(rawNew, rawLegacy));
+    });
+  });
+}
+
+export async function savePrompts(map: PromptMap): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const normalized: PromptMap = {};
+    for (const k of Object.keys(map)) {
+      normalized[normalizeKey(k)] = map[k];
+    }
+    chrome.storage.local.set(
+      {
+        [STORAGE_KEY_NEW]: normalized,
+        [STORAGE_KEY_LEGACY]: normalized
+      },
+      () => {
+        const err = chrome.runtime.lastError;
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+}
+
+export function subscribeToChanges(cb: (map: PromptMap) => void) {
+  const bc = new BroadcastChannel('contextsync_prompts');
+  bc.onmessage = () => getAllPrompts().then(cb).catch(() => {});
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes[STORAGE_KEY_NEW] || changes[STORAGE_KEY_LEGACY]) {
+      getAllPrompts().then(cb).catch(() => {});
+    }
+  });
+
+  return () => {
+    bc.close();
+    // no removal API for chrome.storage.onChanged in MV3
+  };
+}
+
+export function broadcastChange() {
+  try {
+    const bc = new BroadcastChannel('contextsync_prompts');
+    bc.postMessage('update');
+    bc.close();
+  } catch (e) {
+    // ignore
+  }
+}
+
+export async function getHiddenPrompts(): Promise<HiddenPromptMap> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_HIDDEN], (res) => {
+      resolve((res[STORAGE_KEY_HIDDEN] || {}) as HiddenPromptMap);
+    });
+  });
+}
+
+export async function saveHiddenPrompts(map: HiddenPromptMap): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEY_HIDDEN]: map }, () => resolve());
+  });
+}
+
+export async function getHiddenPasswordHash(): Promise<string | null> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_HIDDEN_PASSWORD], (res) => {
+      resolve((res[STORAGE_KEY_HIDDEN_PASSWORD] as string) || null);
+    });
+  });
+}
+
+export async function setHiddenPasswordHash(hash: string): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEY_HIDDEN_PASSWORD]: hash }, () => resolve());
+  });
+}
+
+// Move a prompt from main store to hidden store
+export async function movePromptToHidden(key: string, password: string): Promise<void> {
+  const all = await getAllPrompts();
+  const hidden = await getHiddenPrompts();
+  if (all[key] !== undefined) {
+    hidden[key] = await encryptData(all[key], password);
+    delete all[key];
+    await savePrompts(all);
+    await saveHiddenPrompts(hidden);
+    broadcastChange();
+  }
+}
+
+export async function movePromptToVisible(key: string, password: string): Promise<void> {
+  const all = await getAllPrompts();
+  const hidden = await getHiddenPrompts();
+  if (hidden[key] !== undefined) {
+    const storedPrompt = hidden[key];
+    all[key] = typeof storedPrompt === 'string'
+      ? storedPrompt
+      : await decryptData(storedPrompt, password);
+    delete hidden[key];
+    await savePrompts(all);
+    await saveHiddenPrompts(hidden);
+    broadcastChange();
+  }
+}

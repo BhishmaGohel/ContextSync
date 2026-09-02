@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const keys = Object.keys(prompts);
       
       if (keys.length === 0) {
-        listContainer.innerHTML = '<p style="color: #666;">No master prompts stored yet.</p>';
+        listContainer.innerHTML = '<p style="color: #008080;">No master prompts stored yet.</p>';
         return;
       }
 

@@ -80,6 +80,7 @@ function renderDashboard() {
     keys.forEach((key) => {
       const row = document.createElement('div');
       row.className = 'prompt-card';
+      row.style.color = '#008080';
       row.style.display = 'flex';
       row.style.justifyContent = 'space-between';
       row.style.alignItems = 'center';
@@ -91,7 +92,7 @@ function renderDashboard() {
       nameSpan.style.flex = '1';
       nameSpan.style.fontSize = '14px';
       nameSpan.style.fontWeight = '500';
-      nameSpan.style.color = '#1f2937';
+      nameSpan.style.color = '#008080';
       nameSpan.style.cursor = 'pointer';
 
       row.addEventListener('click', () => {

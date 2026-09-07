@@ -80,7 +80,7 @@ function renderDashboard() {
     keys.forEach((key) => {
       const row = document.createElement('div');
       row.className = 'prompt-card';
-      row.style.color = '#008080';
+      row.style.color = '#087055';
       row.style.display = 'flex';
       row.style.justifyContent = 'space-between';
       row.style.alignItems = 'center';
@@ -92,7 +92,7 @@ function renderDashboard() {
       nameSpan.style.flex = '1';
       nameSpan.style.fontSize = '14px';
       nameSpan.style.fontWeight = '500';
-      nameSpan.style.color = '#008080';
+      nameSpan.style.color = '#087055';
       nameSpan.style.cursor = 'pointer';
 
       row.addEventListener('click', () => {
@@ -107,7 +107,7 @@ function renderDashboard() {
 
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Delete';
-      delBtn.className = 'btn-delete';
+      delBtn.className = 'button-secondary';
       delBtn.style.marginLeft = '10px';
       delBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -161,7 +161,11 @@ function renderDashboard() {
 async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<string, EncryptedData | string>, password: string) {
   if (!hiddenMap || Object.keys(hiddenMap).length === 0) return;
   const header = document.createElement('div');
-  header.style.marginTop = '12px';
+  header.style.marginTop = '24px';
+  header.style.marginBottom = '18px';
+  header.style.fontSize = '20px';
+  header.style.color = '#087055';
+  header.style.fontWeight = '500';
   header.innerHTML = '<strong>Hidden Prompts</strong>';
   container.appendChild(header);
 
@@ -176,6 +180,7 @@ async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<str
 
     const nameSpan = document.createElement('span');
     nameSpan.textContent = key + ' (hidden)';
+    nameSpan.style.color = '#087055';
     nameSpan.style.flex = '1';
     nameSpan.style.fontSize = '14px';
     nameSpan.style.fontWeight = '500';
@@ -194,7 +199,7 @@ async function renderHiddenSection(container: HTMLElement, hiddenMap: Record<str
 
     const delBtn = document.createElement('button');
     delBtn.textContent = 'Delete';
-    delBtn.className = 'btn-delete';
+    delBtn.className = 'button-secondary';
     delBtn.style.marginLeft = '8px';
     delBtn.addEventListener('click', async () => {
       const ok = confirm(`Permanently delete hidden prompt "${key}"?`);

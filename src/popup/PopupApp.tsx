@@ -12,10 +12,11 @@ export default function PopupApp() {
 
   return (
     <div className="p-4 w-80">
-      <div className="mb-3 flex justify-between items-center">
-        <h1 className="text-lg font-semibold">ContextSync</h1>
+      <div className="mb-3 flex justify-between items-center" >
+        <h1 className="text-lg font-semibold" style={{ color: '#087055' }}>ContextSync</h1>
         <button
-          className="button-secondary px-2 py-1 rounded"
+          className="button-secondary text-base px-2 py-1 rounded"
+          style={{ color: '#087055' }}
           onClick={() => {
             try {
               if (chrome.runtime && chrome.runtime.openOptionsPage) {
@@ -43,8 +44,12 @@ export default function PopupApp() {
         {Object.keys(prompts).length === 0 && <div className="text-sm text-gray-500">No prompts saved.</div>}
         {Object.entries(prompts).map(([k, v]) => (
           <div key={k} className="p-2 border rounded">
-            <div className="font-medium">{k}</div>
-            <div className="text-sm text-gray-700 truncate">{v}</div>
+            <div className="text-sm font-semibold" style={{ color: '#087055' }}>
+              {k}
+            </div>
+            <div className="text-xs text-gray-700 truncate" style={{ color: '#529a88' }}>
+              {v}
+            </div>
           </div>
         ))}
       </div>

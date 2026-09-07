@@ -6,10 +6,14 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #FFFFFF;
+      background-color: #ffffff;
       margin: 0;
       padding: 40px;
       color: #333;
+    }
+    h1 {
+      font-size: 24px;
+      color: #087055;
     }
     .container {
       max-width: 1100px;
@@ -19,12 +23,12 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     }
-    h1 { 
+    .main-header { 
+      display: flex;
       margin-top: 0;
       font-size: 24px;
-      border-bottom: 2px solid #eaeaea;
-      padding-bottom: 10px;
-      color: #008080;
+      align-items: center;
+      color: #087055
     }
     .dashboard-grid {
       display: grid;
@@ -33,7 +37,7 @@
       margin-top: 24px;
     }
     .panel {
-      background: #FFFFFF;
+      background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       padding: 24px;
@@ -48,10 +52,10 @@
     .panel h2 {
       margin: 0;
       font-size: 20px;
-      color: #006666;
+      color: #087055;
     }
     .panel-header-actions {
-      color: #006666;
+      color: #087055;
       display: flex;
       gap: 8px;
     }
@@ -60,11 +64,21 @@
     input[type="text"], textarea {
       width: 100%;
       box-sizing: border-box;
-      border: 1px solid #d1d5db;
+      border: 1px solid #6ea194;
+      color: #087055;
       border-radius: 10px;
       padding: 14px;
       font-size: 14px;
       background: #fff;
+      outline: none;
+      transition: border-color 0.2s ease-in-out;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: #087055; /* Changes border to your teal color */
+    }
+    input[type="text"]::placeholder, textarea::placeholder {
+      color: #6ea194;   /* Muted teal color */
+      opacity: 1;       /* Required for Firefox to display the correct opacity */
     }
     textarea { height: 240px; resize: vertical; font-family: inherit; }
     .button-row {
@@ -75,9 +89,9 @@
       margin-bottom: 16px;
     }
     button {
-      background-color: #008080;
+      background-color: #529a88;
       color: #ffffff;
-      border: none;
+      border: 1px solid #087055;
       padding: 11px 18px;
       border-radius: 10px;
       cursor: pointer;
@@ -86,14 +100,14 @@
       transition: background-color 0.18s ease;
     }
     button:hover { 
-      background-color: #006666;
-      color: #FFFFFF;
+      background-color: #087055;
+      color: #ffffff;
     }
     .button-secondary {
-      background-color: #4DB6AC;
-      color: #ffffff;
+      background-color: #ffffff;
+      color: #087055;
       height: 40px;
-      border: none;
+      border: 1px solid #087055;
       padding: 11px 18px;
       border-radius: 10px;
       cursor: pointer;
@@ -102,8 +116,8 @@
       transition: background-color 0.18s ease;
     }
     .button-secondary:hover { 
-      background-color: #006666;
-      color: #FFFFFF;
+      background-color: #087055;
+      color: #ffffff;
      }
     .prompt-grid {
       display: flex;
@@ -131,7 +145,7 @@
       border: 1px dashed #cbd5e1;
       border-radius: 10px;
       background: #f8fafc;
-      color: #006666;
+      color: #087055;
       font-size: 14px;
       line-height: 1.6;
     }
@@ -143,9 +157,9 @@
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       margin-bottom: 4px;
     }
-    .prompt-card h3 { margin: 0 0 10px 0; font-size: 18px; color: #004D40; }
+    .prompt-card h3 { margin: 0 0 10px 0; font-size: 18px; color: #087055; }
     .prompt-card pre {
-      background: #006666;
+      background: #087055;
       padding: 14px;
       border-radius: 10px;
       white-space: pre-wrap;
@@ -157,47 +171,43 @@
       font-weight: bold;
     }
     .actions { margin-top: 16px; display: flex; justify-content: flex-end; }
-    .btn-delete { 
-      background-color: #26A69A;
-      color: #E0F2F1; 
-    }
-    .btn-delete:hover { 
-      background-color: #00897B;
-      color: #E0F2F1; 
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Master Prompt Dashboard</h1>
+    <div class="panel-header">
+      <div class="main-header">
+        <h1>Master Prompt Dashboard</h1>
+      </div>
+      <div class="panel-header-actions">
+        <button id="exportBtn" type="button" class="button" style="padding: 11px 18px; font-size: 14px;">Export</button>
+        <button id="importBtn" type="button" class="button" style="padding: 11px 18px; font-size: 14px;">Import</button>
+        <button id="showHiddenBtn" type="button" class="button" style="padding: 11px 18px; font-size: 14px;">Show Hidden</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </div>
 
     <div class="dashboard-grid">
       <div class="panel">
         <div class="panel-header">
           <h2>Prompts</h2>
-          <div class="panel-header-actions">
-            <button id="exportBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Export</button>
-            <button id="importBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Import</button>
-            <button id="showHiddenBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Show Hidden</button>
-            <input id="importFile" type="file" accept="application/json" style="display:none" />
-          </div>
         </div>
         <div id="listContainer"></div>
       </div>
 
       <div class="panel">
         <div class="form-group">
-          <label for="pName" style="color: #008080;">Master Prompt Name (Key Unique Identifier)</label>
+          <label for="pName" style="color: #087055;">Master Prompt Name (Key Unique Identifier)</label>
           <input type="text" id="pName" placeholder="e.g., Senior Academic Researcher">
         </div>
 
         <div class="form-group">
-          <label for="pText" style="color: #008080;">Master Prompt Text Structure</label>
+          <label for="pText" style="color: #087055;">Master Prompt Text Structure</label>
           <textarea id="pText" placeholder="Paste structural constraints, rules, tone metrics here..."></textarea>
         </div>
 
         <div class="button-row">
-          <button id="saveBtn">Save</button>
+          <button id="saveBtn" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Save</button>
           <button id="updateBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Update</button>
           <button id="cancelBtn" type="button" class="button-secondary" style="padding: 8px 12px; font-size: 12px;">Cancel</button>
         </div>

@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const keys = Object.keys(prompts);
       
       if (keys.length === 0) {
-        listContainer.innerHTML = '<p style="color: #666;">No master prompts stored yet.</p>';
+        listContainer.innerHTML = '<p style="color: #087055;">No master prompts stored yet.</p>';
         return;
       }
 
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Delete';
-        delBtn.className = 'btn-delete';
+        delBtn.className = 'button-secondary';
         
         // Edge Case 2 Fix: Safe verification sequence check via native confirm block
         delBtn.addEventListener('click', () => {

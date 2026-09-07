@@ -148,7 +148,7 @@ function mountUIOverlayForToken(targetNode, tokenStartChar, tokenEndChar) {
 
     const labelHeader = document.createElement('div');
     labelHeader.className = 'prompt-injector-title';
-    labelHeader.textContent = 'Insert Saved Master Prompt:';
+    labelHeader.textContent = 'Insert Saved Master Prompt';
     menuDiv.appendChild(labelHeader);
 
     promptKeys.forEach(keyName => {

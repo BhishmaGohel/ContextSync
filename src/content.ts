@@ -197,9 +197,9 @@ function mountUIOverlayForToken(
       // Create the search input
       const searchInput = document.createElement('input');
       searchInput.type = 'text';
-      searchInput.style.background = 'white';
+      searchInput.style.background = '#ffffff';
       searchInput.style.fontFamily = 'sans-serif';
-      searchInput.style.color = '#1f2937';
+      searchInput.style.color = '#087055';
       searchInput.style.width = '80%';
       searchInput.style.height = '24px';
       searchInput.style.borderRadius = '10px';
@@ -207,6 +207,7 @@ function mountUIOverlayForToken(
       searchInput.style.paddingLeft = '10px';
       searchInput.className = 'prompt-injector-search'; // Add a CSS class if you want to style it
       searchInput.placeholder = 'Search prompts...';
+      searchInput.style.border = '1px solid #087055';
       // Prevent mousedown from blurring or triggering unwanted behavior on the menu
       searchInput.addEventListener('mousedown', (e) => e.stopPropagation());
       menuDiv.appendChild(searchInput);
@@ -269,22 +270,23 @@ function mountUIOverlayForToken(
 
     const labelHeader = document.createElement('div');
     labelHeader.className = 'prompt-injector-title';
-    labelHeader.textContent = 'Insert Saved Master Prompt:';
+    labelHeader.textContent = 'Insert Saved Master Prompt';
     menuDiv.appendChild(labelHeader);
 
     // Create the search input
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
-    searchInput.style.background = 'white';
+    searchInput.style.background = '#FFFFFF';
     searchInput.style.fontFamily = 'sans-serif';
-    searchInput.style.color = '#1f2937';
+    searchInput.style.color = '#087055';
     searchInput.style.width = '80%';
     searchInput.style.height = '24px';
     searchInput.style.borderRadius = '10px';
     searchInput.style.marginLeft = '12px';
     searchInput.style.paddingLeft = '10px';
     searchInput.className = 'prompt-injector-search'; // Add a CSS class if you want to style it
-    searchInput.placeholder = 'Search prompts...';
+    searchInput.placeholder = 'Search prompts...'
+    searchInput.style.border = '1px solid #087055';
     // Prevent mousedown from blurring or triggering unwanted behavior on the menu
     searchInput.addEventListener('mousedown', (e) => e.stopPropagation());
     menuDiv.appendChild(searchInput);

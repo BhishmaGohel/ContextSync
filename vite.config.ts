@@ -11,6 +11,13 @@ function copyStaticAssets(): Plugin {
     name: 'copy-static-assets',
     apply: 'build',
     closeBundle() {
+
+      const srcIcons = path.resolve(__dirname, 'src/icons');
+      const destIcons = path.resolve(__dirname, 'dist/icons');
+      if (fs.existsSync(srcIcons)) {
+        fs.cpSync(srcIcons, destIcons, { recursive: true });
+      }
+
       const files = ['manifest.json', 'background.js', 'styles.css'];
       for (const file of files) {
         const src = path.resolve(__dirname, file);
@@ -24,6 +31,14 @@ function copyStaticAssets(): Plugin {
               script.js = ['content.js'];
             });
             manifest.options_page = 'dashboard.html';
+
+            manifest.icons = {
+              "16": "icons/icon-16.png",
+              "32": "icons/icon-32.png",
+              "64": "icons/icon-64.png",
+              "128": "icons/icon-128.png"
+            };
+            
             fs.writeFileSync(dest, `${JSON.stringify(manifest, null, 2)}\n`);
           } else {
             fs.copyFileSync(src, dest);
